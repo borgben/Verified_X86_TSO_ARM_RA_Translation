@@ -1,0 +1,71 @@
+########################################
+# Rocq / Coq compiled artifacts
+########################################
+
+# Compiled files
+*.vo
+*.vos
+*.vok
+*.glob
+*.vio
+*.aux
+
+# Native compute artifacts
+*.cmxs
+*.cmx
+*.cmxa
+*.cmi
+*.cmo
+*.o
+
+########################################
+# Build directories
+########################################
+
+# Dune
+_build/
+
+# Make / coq_makefile
+Makefile
+Makefile.conf
+.coq-native/
+*.d
+
+# opam local switch (if present in project)
+_opam/
+
+########################################
+# Documentation output
+########################################
+
+html/
+latex/
+*.html
+*.pdf
+
+########################################
+# Editor / IDE files
+########################################
+
+# Emacs
+*~
+\#*\#
+.emacs.desktop
+.dir-locals.el
+
+# Vim
+.*.swp
+.*.swo
+
+# VSCode
+.vscode/
+
+# IntelliJ / JetBrains
+.idea/
+
+########################################
+# OS files
+########################################
+
+.DS_Store
+Thumbs.db
