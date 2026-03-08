@@ -1,62 +1,41 @@
-Require Import Coq.Relations.Relation_Definitions.
-Require Import Coq.Relations.Relation_Operators. 
-Require Import Coq.Init.Nat.
-
-Definition Location := nat.
-Definition Value    := nat.
-Definition UniqueId := nat.
-Definition ThreadId := nat.
-
-
-Inductive Tag : Type :=
-| tmov : Tag
-| trmw : Tag.
-
-Definition UniquePred {A} (P : A -> Prop) :=
-  forall x y, P x -> P y -> x = y.
-
-Record LabelClass (Label : Type) := {
-  labs_r : Label -> Prop;
-  labs_w : Label -> Prop;
-  labs_f : Label -> Prop;
-
-  (* Mutual Exclusivity of Labels, an event is exclusively either a Read, Write or Fence. *)
-  labs_xopt :
-    forall l,
-      (labs_r l \/ labs_w l \/ labs_f l) /\
-      ~ (labs_r l /\ labs_w l) /\
-      ~ (labs_r l /\ labs_f l) /\
-      ~ (labs_w l /\ labs_f l);
-
-  labs_r_unique : UniquePred labs_r;
-  labs_w_unique : UniquePred labs_w;
-  labs_f_unique : UniquePred labs_f;
-
-  lab_r_tag :
-    forall lab:Label, labs_r lab -> Tag;
-
-  lab_w_tag :
-    forall lab:Label, labs_w lab -> Tag;
-
-  lab_r_loc :
-    forall lab:Label, labs_r lab -> Location;
-
-  lab_r_val :
-    forall lab:Label, labs_r lab -> Value;
-
-  lab_w_loc :
-    forall lab:Label, labs_w lab -> Location;
-
-  lab_w_val :
-    forall lab:Label, labs_w lab -> Value;
-
-  lab_eq_dec :
-    forall x y : Label, {x = y} + {x <> y}
-}.
+From hahn Require Import Hahn. 
+From RelAcqProof Require Import Label. 
+Set Implicit Arguments. 
+Definition UID := nat. 
+Definition TID := nat. 
 
 (* Events all have the same structure, we might however wish to instantiate 
    Events for different architectures with different labels. *)
-Inductive Event (Label:Type) {LabelProof : LabelClass Label}: Type := 
-    | EventInit : UniqueId -> Location -> Value -> Event Label
-    | EventSkip : UniqueId -> ThreadId -> Event Label
-    | EventThread : UniqueId -> ThreadId -> Label -> Event Label. 
+Inductive Event (Label:Type) `{LabelProof:LabelClass Label} : Type := 
+    | EventInit (uid:UID) (lab:Label) 
+    (* | EventSkip : UniqueId -> ThreadId -> Event Label *)
+    | EventThread (uid:UID) (tid:TID) (lab:Label).
+
+Definition same_thread (Label:Type) `{Label:LabelClass Label} (e1 e2:Event): Prop := 
+  match e1, e2 with 
+  | EventThread _ tid _, EventThread _ tid' _ =>  tid = tid'  
+  | _, _ => False  
+  end. 
+
+Definition event_label {Label:Type} `{Label:LabelClass Label} (e :Event)  :=
+  match e with
+  | EventInit _ lab => lab
+  | EventThread _ _ lab => lab
+  end.
+
+Definition seq_before(Label:Type) `{Label:LabelClass Label} (e1 e2:Event):Prop := 
+  match e1, e2 with 
+  | _, EventInit _ _ => False 
+  | EventInit _ _, EventThread _ _ _  => True 
+  | EventThread uid tid _, EventThread uid' tid' _ => tid = tid' /\  uid < uid'
+  end. 
+
+Definition same_loc (Label:Type) `{Label:LabelClass Label} (e1 e2:Event): Prop :=  
+  lab_loc (event_label e1) = lab_loc (event_label e2).
+  
+Definition same_val (Label:Type) `{Label:LabelClass Label} (e1 e2:Event): Prop := 
+  lab_val (event_label e1) = lab_val (event_label e2). 
+
+Definition both_write {Label: Type} {LabelProof: LabelClass Label} (e1 e2:Event): Prop := 
+  is_w (event_label e1) /\ is_w (event_label e2). 
+    
