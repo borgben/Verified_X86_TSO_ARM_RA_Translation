@@ -7,7 +7,11 @@ opam repo add coq-weakmemory-local git+https://github.com/weakmemory/local-coq-o
 opam repo add coq-promising-local git+https://github.com/weakmemory/local-coq-opam-archive 
 ```
 #### Create MakeFile 
-coq_makefile -f _CoqProject -o Makefile 
+```bash
+coq_makefile -f _CoqProject -o Makefile
+``` 
 
 #### Make 
+```bash 
 make 
+```
