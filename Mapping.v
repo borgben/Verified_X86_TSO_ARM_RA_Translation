@@ -3,8 +3,8 @@ From RelAcqProof Require Import Events.
 From RelAcqProof Require Import Label. 
 From RelAcqProof Require Import LabelArm.
 From RelAcqProof Require Import LabelX86. 
-
-
+From Coq Require Import Logic.FunctionalExtensionality. 
+From Coq Require Import Logic.PropExtensionality. 
 (* *************************** Map from X86 to Arm ************************* *)
 Definition map_label_X86_Arm (lab_X86: LabelX86): LabelArm := 
 match lab_X86 with
@@ -47,3 +47,59 @@ Definition map_exec_Arm_X86 (execArm:@Execution LabelArm LabelClassArm):@Executi
     rmw    := fun e1 e2 => exists x y, rmw execArm x y /\ e1 = map_event_Arm_X86 x /\ e2 = map_event_Arm_X86 y;  
 |}. 
 
+Lemma map_label_Arm_X86_injective:
+  forall e e0,
+  map_label_Arm_X86 e = map_label_Arm_X86 e0 ->
+  e = e0.
+Proof with eauto. 
+    intros. destruct e, e0; simpl in H. all:try(inversion H; injection H; intros; subst; eauto). 
+Qed.  
+
+Lemma map_event_Arm_X86_injective :
+  forall e e0,
+  map_event_Arm_X86 e = map_event_Arm_X86 e0 ->
+  e = e0. 
+Proof. 
+    intros. simpl in H. unfold map_event_Arm_X86 in H. destruct e, e0.
+    all:try(inversion H).   
+    all:try(injection H; intros; subst; apply map_label_Arm_X86_injective in H0; rewrite H0; eauto).  
+Qed.  
+
+Lemma mapping_preserves_writes: forall (execArm:@Execution LabelArm LabelClassArm) (e:@Event LabelArm LabelClassArm), 
+    ((events execArm) e) /\ (is_w (event_label e)) <-> ((events (map_exec_Arm_X86 execArm)) (map_event_Arm_X86 e)) /\ (is_w (event_label (map_event_Arm_X86 e))).
+Proof with eauto. 
+    intros.
+    split. 
+    - intros. destruct H as [H0 H1]. split. 
+      -- simpl. exists e... 
+      -- simpl. destruct e eqn:E. subst.
+         --- destruct lab eqn:E0; subst; simpl... 
+         --- destruct lab eqn:E0; subst; simpl... 
+    - split. intros.  destruct H as [H0 H1]. 
+      -- simpl in H0. destruct H0 as [e0]. destruct H as [H2 H3]. apply map_event_Arm_X86_injective in H3. subst... 
+      -- destruct H as [H1 H2]. destruct e eqn:E0; destruct lab eqn:E1; subst; simpl in H2. all:try(simpl; eauto).
+Qed.   
+
+
+Lemma mapping_preserves_mo:forall(execArm:@Execution LabelArm LabelClassArm),  (exists e1 e2, (mo execArm) e1 e2) <-> (exists e1 e2, (mo (map_exec_Arm_X86 execArm)) e1 e2). 
+Proof with eauto. 
+    intros. 
+    split. 
+    - intros. destruct H  as [e1 [e2]] eqn:E. subst. exists (map_event_Arm_X86 e1), (map_event_Arm_X86 e2). unfold mo. simpl. exists e1, e2... 
+    - intros. destruct H  as [e1 [e2]] eqn:E. subst. unfold mo in m. simpl in m. destruct m as [e0 [e3]].  exists e0, e3... destruct H...   
+Qed. 
+
+Lemma mapping_preserves_behaviour: forall(execArm:@Execution LabelArm LabelClassArm), Behaviour (execArm) = Behaviour (map_exec_Arm_X86 execArm). 
+Proof.
+    intros. 
+    unfold Behaviour. 
+    apply functional_extensionality.
+    destruct x as [l v].
+    apply propositional_extensionality. 
+    split. 
+    - intros. destruct H as [e]. destruct H as [H1 [H2 [H3 H4]]]. 
+      exists (map_event_Arm_X86 e). all:split.
+Admitted.          
+    
+    
+      
