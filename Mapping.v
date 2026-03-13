@@ -104,23 +104,36 @@ Proof with eauto.
       apply map_event_Arm_X86_injective in e6. apply map_event_Arm_X86_injective in H. subst...  
 Qed. 
 
+Lemma mapping_preserves_location: forall (e:Event),
+    lab_loc (event_label e) = lab_loc (event_label (map_event_Arm_X86 e)).
+Proof.
+    intros.
+    simpl.
+    destruct e; destruct lab; simpl; reflexivity.
+Qed.
+
+Lemma mapping_preserves_value: forall (e:Event),
+    lab_val (event_label e) = lab_val (event_label (map_event_Arm_X86 e)).
+Proof.
+    intros.
+    simpl.
+    destruct e; destruct lab; simpl; reflexivity.
+Qed.
+
 Lemma mapping_preserves_behaviour: forall (execArm:@Execution LabelArm LabelClassArm) (l:Location) (v:Value), 
     Behaviour (execArm) (l, v) <-> Behaviour (map_exec_Arm_X86 execArm) (l, v).  
 Proof with eauto.
     intros. 
     unfold Behaviour. 
     split. 
-    - intros. destruct H as [e]. destruct H as [H1 [H2 [H3 H4]]]. 
-      exists (map_event_Arm_X86 e); repeat split.  
+    - intros. destruct H as [e]. destruct H as [H1 [H2 [H3 [H4 H5]]]]. 
+      exists (map_event_Arm_X86 e). repeat split.
       -- simpl. exists e. split... 
-      -- assert (H5: events execArm e /\ is_w (event_label e)). { eauto. } 
-             rewrite mapping_preserves_writes in H5. destruct H5 as [_ H5]... 
-      -- (* Mapping Preserves Location *) admit. 
-      -- (* Mapping Preserves Values *) admit. 
-      -- destruct H4 as [_ H5]. unfold not. intros. unfold not in H5. 
+      -- assert (H6: events execArm e /\ is_w (event_label e)). { eauto. } 
+         rewrite mapping_preserves_writes in H6. destruct H6 as [_ H6]...
+      -- rewrite <- mapping_preserves_location. apply H3.
+      -- rewrite <- mapping_preserves_value. apply H4.
+      -- unfold not. intros. unfold not in H5. 
          apply H5. destruct H. exists (map_event_X86_Arm x).  
-         apply mapping_preserves_mo. rewrite map_event_Arm_X86_inverse... 
-Admitted.   
-    
-    
-      
+         apply mapping_preserves_mo. rewrite map_event_Arm_X86_inverse...
+Admitted.
