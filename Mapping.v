@@ -70,26 +70,27 @@ Proof.
     all:try(injection H; intros; subst; apply map_label_Arm_X86_injective in H0; rewrite H0; eauto).  
 Qed.  
 
-Lemma map_event_identity:
+Lemma map_event_Arm_X86_inverse:
   forall e,
   map_event_Arm_X86 (map_event_X86_Arm e) = e. 
 Proof with eauto. 
-    intros. destruct e; destruct lab; simpl...       
+    intros. destruct e; destruct lab; simpl; reflexivity.     
 Qed. 
 
 Lemma mapping_preserves_writes: forall (execArm:@Execution LabelArm LabelClassArm) (e:@Event LabelArm LabelClassArm), 
-    ((events execArm) e) /\ (is_w (event_label e)) <-> ((events (map_exec_Arm_X86 execArm)) (map_event_Arm_X86 e)) /\ (is_w (event_label (map_event_Arm_X86 e))).
+    ((events execArm) e) /\ (is_w (event_label e)) 
+    <-> 
+    let eX86 := (map_event_Arm_X86 e) in 
+        ((events (map_exec_Arm_X86 execArm)) eX86) /\ (is_w (event_label eX86)).
 Proof with eauto. 
     intros.
     split. 
     - intros. destruct H as [H0 H1]. split. 
       -- simpl. exists e... 
-      -- simpl. destruct e eqn:E. subst.
-         --- destruct lab eqn:E0; subst; simpl... 
-         --- destruct lab eqn:E0; subst; simpl... 
-    - split. intros.  destruct H as [H0 H1]. 
+      -- simpl. destruct e eqn:E; subst; destruct lab eqn:E0; subst; simpl... 
+    - intros. split. destruct H as [H0 H1]. 
       -- simpl in H0. destruct H0 as [e0]. destruct H as [H2 H3]. apply map_event_Arm_X86_injective in H3. subst... 
-      -- destruct H as [H1 H2]. destruct e eqn:E0; destruct lab eqn:E1; subst; simpl in H2. all:try(simpl; eauto).
+      -- destruct H as [H1 H2]. destruct e eqn:E0; destruct lab eqn:E1; subst; simpl in H2. all:try(simpl; eauto). 
 Qed.   
 
 
@@ -103,14 +104,11 @@ Proof with eauto.
       apply map_event_Arm_X86_injective in e6. apply map_event_Arm_X86_injective in H. subst...  
 Qed. 
 
-Lemma mapping_preserves_behaviour: forall (execArm:@Execution LabelArm LabelClassArm), 
-    Behaviour (execArm) = Behaviour (map_exec_Arm_X86 execArm). 
+Lemma mapping_preserves_behaviour: forall (execArm:@Execution LabelArm LabelClassArm) (l:Location) (v:Value), 
+    Behaviour (execArm) (l, v) <-> Behaviour (map_exec_Arm_X86 execArm) (l, v).  
 Proof with eauto.
     intros. 
     unfold Behaviour. 
-    apply functional_extensionality.
-    destruct x as [l v].
-    apply propositional_extensionality. 
     split. 
     - intros. destruct H as [e]. destruct H as [H1 [H2 [H3 H4]]]. 
       exists (map_event_Arm_X86 e). all:split.
@@ -122,8 +120,8 @@ Proof with eauto.
              ---- split. (* Mapping Preserves Values *) admit. 
                   ----- destruct H4 as [_ H5]. unfold not. intros. unfold not in H5. 
                         apply H5. destruct H. exists (map_event_X86_Arm x).  
-                        apply mapping_preserves_mo. rewrite map_event_identity...
-Admitted.          
+                        apply mapping_preserves_mo. rewrite map_event_Arm_X86_inverse... 
+Admitted.   
     
     
       
