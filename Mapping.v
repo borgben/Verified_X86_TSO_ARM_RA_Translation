@@ -47,6 +47,8 @@ Definition map_exec_Arm_X86 (execArm:@Execution LabelArm LabelClassArm):@Executi
     rmw    := fun e1 e2 => exists x y, rmw execArm x y /\ e1 = map_event_Arm_X86 x /\ e2 = map_event_Arm_X86 y;  
 |}. 
 
+
+(* *************************** Mapping Lemmas ****************************** *)
 Lemma map_label_Arm_X86_injective:
   forall e e0,
   map_label_Arm_X86 e = map_label_Arm_X86 e0 ->
@@ -81,7 +83,7 @@ Proof with eauto.
 Qed.   
 
 
-Lemma mapping_preserves_mo:forall(execArm:@Execution LabelArm LabelClassArm),  (exists e1 e2, (mo execArm) e1 e2) <-> (exists e1 e2, (mo (map_exec_Arm_X86 execArm)) e1 e2). 
+Lemma mapping_preserves_mo: forall(execArm:@Execution LabelArm LabelClassArm),  (exists e1 e2, (mo execArm) e1 e2) <-> (exists e1 e2, (mo (map_exec_Arm_X86 execArm)) e1 e2). 
 Proof with eauto. 
     intros. 
     split. 
@@ -90,7 +92,7 @@ Proof with eauto.
 Qed. 
 
 Lemma mapping_preserves_behaviour: forall(execArm:@Execution LabelArm LabelClassArm), Behaviour (execArm) = Behaviour (map_exec_Arm_X86 execArm). 
-Proof.
+Proof with eauto.
     intros. 
     unfold Behaviour. 
     apply functional_extensionality.
@@ -99,6 +101,14 @@ Proof.
     split. 
     - intros. destruct H as [e]. destruct H as [H1 [H2 [H3 H4]]]. 
       exists (map_event_Arm_X86 e). all:split.
+      -- simpl. exists e. split... 
+      -- split. 
+         --- assert (H5: events execArm e /\ is_w (event_label e)). { eauto. } rewrite mapping_preserves_writes in H5. destruct H5 as [_ H5]...
+         --- split. (* Mapping Preserves Location *) admit.
+             ---- split. (* Mapping Preserves Values *) admit. 
+                  ----- destruct H4 as [_ H5]. unfold not. intros. unfold not in H5. apply H5. assert (H6: exists e e', mo (map_exec_Arm_X86 execArm) e e'). 
+                        { intros. exists (map_event_Arm_X86 e) ... } rewrite <- mapping_preserves_mo in H6.        
+
 Admitted.          
     
     
