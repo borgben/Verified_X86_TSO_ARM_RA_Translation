@@ -41,11 +41,11 @@ Definition ppo_x86 {Label: Type} {LabelProof : LabelClass Label} (exec: Executio
 
 (* happens before is defined by the union of several relations *)
 Definition hb_x86 {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): relation Event :=
-    (ppo_x86 exec) ∪ (implid_x86 exec) ∪ (external rf exec) ∪ (fr exec) ∪ (mo exec).
+    ((ppo_x86 exec) ∪ (implid_x86 exec) ∪ (external rf exec) ∪ (fr exec) ∪ (mo exec))⁺. 
 
 (* x86 Axiom: the transitive closure of happens before must be irreflexive (cycles cause it to be reflexive) *)
 Definition ordered_before_axiom_x86 {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): Prop :=
-    irreflexive ((hb_x86 exec)⁺).
+    irreflexive (hb_x86 exec).  
 
 Definition x86_consistent  {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): Prop := 
     well_formed exec /\ atomicity_axiom exec /\ coherence_axiom exec /\ ordered_before_axiom_x86 exec.

@@ -1,7 +1,8 @@
 From RelAcqProof Require Import Executions.
 From RelAcqProof Require Import Events.   
 From RelAcqProof Require Import Arm.
-From RelAcqProof Require Import X86. 
+From RelAcqProof Require Import X86.
+From hahn Require Import Hahn.  
 
 (* *************************** Map from X86 to Arm ************************* *)
 Definition map_label_X86_Arm (lab_X86: LabelX86): LabelArm := 
@@ -340,6 +341,30 @@ Proof with eauto.
     rewrite mapping_preserves_mo. repeat rewrite map_event_Arm_X86_inverse...
 Qed. 
 
+Lemma mapping_preserves_ordered_before: forall (execArm:Execution) (e0 e1:Event), 
+    well_formed execArm -> ob (execArm) e0 e1 -> hb_x86 (map_exec_Arm_X86 execArm) (map_event_Arm_X86 e0) (map_event_Arm_X86 e1).  
+Proof with eauto. 
+    intros. unfold ob in H0. unfold well_formed in H. destruct H as [H5 [H6 H7]].  
+    induction H0. 
+    - destruct H  as [[[[H0| H1]| H2] | H3] | H4]. 
+        -- unfold aob in H0. destruct H0  as [H0 | H1]; unfold hb_x86. 
+           --- left. left. left. right. unfold well_formed_rmw in H7. 
+               specialize (H7 x y). apply H7 in H0 as H8. destruct H8 as [H9 [H10 [H11 H12]]]. 
+               unfold implid_x86. left. unfold seq. exists (map_event_Arm_X86 y). split. 
+               ---- unfold poimm  in H11. destruct H11 as [H11 _]. rewrite mapping_preserves_po in H11...
+               ---- right. unfold codom_rel. simpl. unfold eqv_rel. split... exists (map_event_Arm_X86 x), (x), (y)...  
+           --- left. left. left. right. unfold implid_x86. right. unfold seq. exists (map_event_Arm_X86 x). split.
+               ---- right. unfold seq in H1. destruct H1 as [z [H0 H1]]. destruct H1 as [z0 [H1 H2]]. unfold eqv_rel in H0. 
+                    destruct H0 as [H0 H3]. subst. unfold eqv_rel. split... unfold codom_rel in *. destruct H3. 
+                    exists (map_event_Arm_X86 x).  rewrite mapping_preserves_rmw in *... 
+               ---- unfold seq in H1.  destruct H1 as [z [H0 H1]]. destruct H1 as [z0 [H1 H2]]. 
+                    unfold lrs in *. unfold eqv_rel in H0. destruct H0 as [H0 H3]. subst. unfold R in H2. unfold eqv_rel in H2.
+                    destruct H2 as [H2 H4]. subst. unfold minus_rel in H1. unfold seq in H1. destruct H1 as [x [H8 [H9 H10]]]. 
+                    unfold W in H8. unfold eqv_rel in H8. destruct H8 as [H11 _]. subst. unfold poloc in H9.  destruct H9 as [_ H9].
+                    rewrite mapping_preserves_po in H9...
+Admitted.     
+
+
 Lemma mapping_preserves_behaviour: forall (execArm:@Execution LabelArm LabelClassArm) (l:Location) (v:Value), 
     behaviour (execArm) (l, v) <-> behaviour (map_exec_Arm_X86 execArm) (l, v).  
 Proof with eauto.
@@ -368,4 +393,4 @@ Proof with eauto.
          exists x, e0. repeat split. 
          --- rewrite H0 in H6. rewrite map_event_X86_Arm_inverse in H6...
          --- eauto.
-Qed.
+Qed. 
