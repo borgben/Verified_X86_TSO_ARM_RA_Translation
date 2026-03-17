@@ -1,8 +1,17 @@
 From hahn Require Import Hahn. 
-From RelAcqProof Require Import Label. 
 Set Implicit Arguments. 
+
 Definition UID := nat. 
 Definition TID := nat. 
+Definition Location := nat.
+Definition Value := nat.
+
+Class LabelClass (L : Type): Type := {
+  lab_loc : L -> Location;
+  lab_val : L -> Value; 
+  is_r : L -> Prop;
+  is_w : L -> Prop;
+}. 
 
 (* Events all have the same structure, we might however wish to instantiate 
    Events for different architectures with different labels. *)

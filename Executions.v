@@ -1,5 +1,4 @@
 From hahn Require Import Hahn.
-From RelAcqProof Require Import Label. 
 From RelAcqProof Require Import Events.  
 Set Implicit Arguments.
 
@@ -79,43 +78,8 @@ Definition atomicity_axiom {Label: Type} {LabelProof : LabelClass Label} (e: Exe
 
 Definition coherence_axiom {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): Prop :=
     acyclic ((poloc exec) ∪ (rf exec) ∪ (mo exec) ∪ (fr exec)).
-
-(* atomic ops (in domain or codomain of rmw) act as a barrier between them and what happens before or after *)
-Definition implid_x86 {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): relation Event :=
-    let atomic := ⦗dom_rel (rmw exec)⦘ ∪ ⦗codom_rel (rmw exec)⦘ in
-        ((po exec) ⨾ atomic) ∪ (atomic ⨾ (po exec)).
-
-(* TSO enforces everything but W -> R to be ordered *)
-(* is the last case even needed, considering we're esentially doing set difference? *)
-Definition ppo_x86 {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): relation Event :=
-    (po exec) \ (fun w r => is_w (event_label w) /\ is_r (event_label r) /\ ((po exec) r w)). 
-
-(* happens before is defined by the union of several relations *)
-Definition hb_x86 {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): relation Event :=
-    (ppo_x86 exec) ∪ (implid_x86 exec) ∪ (external rf exec) ∪ (fr exec) ∪ (mo exec).
-
-(* x86 Axiom: the transitive closure of happens before must be irreflexive (cycles cause it to be reflexive) *)
-Definition ordered_before_axiom_x86 {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): Prop :=
-    irreflexive ((hb_x86 exec)⁺).
-
-(* ARM axiom *)
-(* bob = ((R_acq_pc ; po) ∪ (po ; W_rel)) *)
-Definition bob_arm {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): relation Event :=
-    let R := ⦗fun r => is_r (event_label r)⦘ in 
-    let W := ⦗fun w => is_w (event_label w)⦘ in
-    (R ⨾ (po exec)) ∪ ((po exec) ⨾ W).
-
-(* ob = (bob ∪ rfe ∪ moe ∪ fre)+ *)
-Definition ordered_before_axiom_arm {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): Prop :=
-    irreflexive (((bob_arm exec) ∪ (external rf exec) ∪ (external mo exec) ∪ (external fr exec))⁺).
-
-Definition x86_consistent  {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): Prop := 
-    well_formed exec /\ atomicity_axiom exec /\ coherence_axiom exec /\ ordered_before_axiom_x86 exec.
     
-Definition arm_consistent  {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): Prop := 
-    well_formed exec /\ atomicity_axiom exec /\ coherence_axiom exec /\ ordered_before_axiom_arm exec. 
-    
-Definition Behaviour {Label: Type} {LabelProof: LabelClass Label} (X : Execution) : Location * Value -> Prop :=
+Definition behaviour {Label: Type} {LabelProof: LabelClass Label} (X : Execution) : Location * Value -> Prop :=
   fun '(l,v) =>
     exists e,
       X.(events) e /\

@@ -1,10 +1,8 @@
 From RelAcqProof Require Import Executions.
 From RelAcqProof Require Import Events.   
-From RelAcqProof Require Import Label. 
-From RelAcqProof Require Import LabelArm.
-From RelAcqProof Require Import LabelX86. 
+From RelAcqProof Require Import Arm.
+From RelAcqProof Require Import X86. 
 
-From Coq Require Import Program.Equality. 
 (* *************************** Map from X86 to Arm ************************* *)
 Definition map_label_X86_Arm (lab_X86: LabelX86): LabelArm := 
 match lab_X86 with
@@ -343,10 +341,10 @@ Proof with eauto.
 Qed. 
 
 Lemma mapping_preserves_behaviour: forall (execArm:@Execution LabelArm LabelClassArm) (l:Location) (v:Value), 
-    Behaviour (execArm) (l, v) <-> Behaviour (map_exec_Arm_X86 execArm) (l, v).  
+    behaviour (execArm) (l, v) <-> behaviour (map_exec_Arm_X86 execArm) (l, v).  
 Proof with eauto.
     intros. 
-    unfold Behaviour. 
+    unfold behaviour. 
     split. 
     - intros. destruct H as [e]. destruct H as [H1 [H2 [H3 [H4 H5]]]]. 
       exists (map_event_Arm_X86 e). repeat split.

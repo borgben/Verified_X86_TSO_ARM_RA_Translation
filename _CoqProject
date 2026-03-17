@@ -1,7 +1,6 @@
 -Q . RelAcqProof
-Label.v 
-LabelX86.v
-LabelArm.v 
 Events.v
 Executions.v
+X86.v
+Arm.v 
 Mapping.v
