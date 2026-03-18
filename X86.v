@@ -37,7 +37,7 @@ Definition implid_x86 {Label: Type} {LabelProof : LabelClass Label} (exec: Execu
 (* TSO enforces everything but W -> R to be ordered *)
 (* is the last case even needed, considering we're esentially doing set difference? *)
 Definition ppo_x86 {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): relation Event :=
-    (po exec) \ (fun w r => is_w (event_label w) /\ is_r (event_label r) /\ ((po exec) r w)). 
+    (po exec) \ (fun w r => is_w (event_label w) /\ is_r (event_label r)). 
 
 (* happens before is defined by the union of several relations *)
 Definition hb_x86 {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): relation Event :=

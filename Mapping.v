@@ -341,14 +341,25 @@ Proof with eauto.
     rewrite mapping_preserves_mo. repeat rewrite map_event_Arm_X86_inverse...
 Qed. 
 
+(* Unset Printing Notations. *)
+Lemma reads_arent_writes: forall (e: @Event LabelArm LabelClassArm), 
+    is_r (event_label e) <-> ~(is_w (event_label e)).
+Proof with eauto.
+    intros. split; destruct e; destruct lab; simpl...
+Qed.
+
 Lemma mapping_preserves_ordered_before: forall (execArm:Execution) (e0 e1:Event), 
     well_formed execArm -> ob (execArm) e0 e1 -> hb_x86 (map_exec_Arm_X86 execArm) (map_event_Arm_X86 e0) (map_event_Arm_X86 e1).  
 Proof with eauto. 
-    intros. unfold ob in H0. unfold well_formed in H. destruct H as [H5 [H6 H7]].  
-    induction H0. 
-    - destruct H  as [[[[H0| H1]| H2] | H3] | H4]. 
-        -- unfold aob in H0. destruct H0  as [H0 | H1]; unfold hb_x86. 
-           --- left. left. left. left. right. unfold well_formed_rmw in H7. 
+    intros. 
+    unfold ob in H0.  
+    unfold well_formed in H. 
+    destruct H as [_ [_ H7]].  
+    unfold hb_x86.
+    induction H0.
+    - left. destruct H as [[[[H0| H1]| H2] | H3] | H4]. 
+        -- unfold aob in H0. destruct H0 as [H0 | H1].
+           --- left. left. left. right. unfold well_formed_rmw in H7. 
                specialize (H7 x y). apply H7 in H0 as H8. destruct H8 as [H9 [H10 [H11 H12]]]. 
                unfold implid_x86. left. unfold seq. exists (map_event_Arm_X86 y). split. 
                ---- unfold poimm  in H11. destruct H11 as [H11 _]. rewrite mapping_preserves_po in H11...
@@ -362,7 +373,32 @@ Proof with eauto.
                     destruct H2 as [H2 H4]. subst. unfold minus_rel in H1. unfold seq in H1. destruct H1 as [x [H8 [H9 H10]]]. 
                     unfold W in H8. unfold eqv_rel in H8. destruct H8 as [H11 _]. subst. unfold poloc in H9.  destruct H9 as [_ H9].
                     rewrite mapping_preserves_po in H9...
-Admitted.     
+        -- left. left. left. left.
+           unfold bob_arm in H1. unfold seq in H1. destruct H1 as [[z [[Heq Hr] Hpo]] | [z [Hpo [Heq Hw]]]].
+           --- rewrite <- Heq in Hpo. 
+               unfold ppo_x86. unfold minus_rel. split.
+               ---- rewrite <- mapping_preserves_po...
+               ---- rewrite <- mapping_preserves_writes_arm.
+                    unfold not. intros. destruct H as [Hw _]. 
+                    rewrite reads_arent_writes in Hr. contradiction.
+           --- rewrite Heq in Hpo. unfold ppo_x86. unfold minus_rel. split.
+               ---- rewrite <- mapping_preserves_po...
+               ---- rewrite <- mapping_preserves_writes_arm.
+                    unfold not. intros. destruct H as [_ Hr]. rewrite <- Heq in Hr. 
+                    apply mapping_preserves_reads_arm in Hr.
+                    rewrite reads_arent_writes in Hr. contradiction.
+        -- left. left. right. 
+           unfold external in *. destruct H2. split. 
+           --- apply mapping_preserves_rf...
+           --- unfold map_event_Arm_X86. destruct x, y; simpl...
+        -- right.
+           unfold external in H3. destruct H3 as [H _].
+           rewrite <- mapping_preserves_mo...
+        -- left. right.
+           unfold external in H4. destruct H4 as [H _].
+           rewrite <- mapping_preserves_fr...
+    - eapply t_trans...
+Qed.
 
 
 Lemma mapping_preserves_behaviour: forall (execArm:@Execution LabelArm LabelClassArm) (l:Location) (v:Value), 
