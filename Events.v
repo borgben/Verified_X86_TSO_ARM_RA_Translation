@@ -31,6 +31,12 @@ Definition event_label {Label:Type} `{Label:LabelClass Label} (e :Event)  :=
   | EventThread _ _ lab => lab
   end.
 
+Definition event_uid {Label:Type} `{Label:LabelClass Label} (e :Event)  :=
+  match e with
+  | EventInit uid _ => uid 
+  | EventThread uid _ _ => uid 
+  end.
+
 Definition seq_before(Label:Type) `{Label:LabelClass Label} (e1 e2:Event):Prop := 
   match e1, e2 with 
   | _, EventInit _ _ => False 
@@ -45,5 +51,4 @@ Definition same_val (Label:Type) `{Label:LabelClass Label} (e1 e2:Event): Prop :
   lab_val (event_label e1) = lab_val (event_label e2). 
 
 Definition both_write {Label: Type} {LabelProof: LabelClass Label} (e1 e2:Event): Prop := 
-  is_w (event_label e1) /\ is_w (event_label e2). 
-    
+  is_w (event_label e1) /\ is_w (event_label e2).

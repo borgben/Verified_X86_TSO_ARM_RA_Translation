@@ -48,27 +48,40 @@ Definition poloc {Label: Type} {LabelProof: LabelClass Label} (exec:Execution): 
 Definition poimm {Label: Type} {LabelProof: LabelClass Label} (exec:Execution) : relation Event  := 
     fun e1 e2 =>  ((po exec) e1 e2) /\ ~(exists e3, ((po exec) e1 e3) /\ ((po exec) e3 e2)).
 
+Definition uid_unique {Label: Type} {LabelProof: LabelClass Label} (exec : Execution) : Prop :=
+    forall e1 e2, events exec e1 -> events exec e2 -> 
+        event_uid e1 = event_uid e2 -> e1 = e2. 
+
+Definition well_formed_po {Label: Type} {LabelProof: LabelClass Label} (exec:Execution): Prop :=
+    (forall e1 e2, po exec e1 e2 -> events exec e1 /\ events exec e2) 
+    /\ 
+    forall (e:Event), (events exec) e <-> exists (e0:Event), ((events exec) e0) /\ ((po exec) e e0 \/ (po exec) e0 e). 
+
 (* Expresses that an mo relation can only exist between two independent writes on the same location. *)
 Definition well_formed_mo {Label: Type} {LabelProof: LabelClass Label} (exec:Execution): Prop := 
-    forall (e1 e2:Event), (mo exec) e1 e2 -> both_write e1 e2 /\ same_loc e1 e2 /\ e1 <> e2. 
+    forall (e1 e2:Event), (mo exec) e1 e2 -> (events exec) e1 /\ (events exec) e2 /\ both_write e1 e2 /\ same_loc e1 e2 /\ e1 <> e2. 
 
 (* Expresses that an rf relation can only exist between a write and a read on the same location, 
    with the same value, uid < uid'and that a read can only be from a single write *)
 Definition well_formed_rf {Label: Type} {LabelProof: LabelClass Label} (exec:Execution): Prop := 
-    forall (w r:Event), (rf exec) w r -> is_w (event_label w) /\ is_r (event_label r)
-                                         /\ same_loc w r 
-                                         /\ same_val w r 
-                                         /\ forall (w0:Event), is_w (event_label w0) -> (rf exec) w0 r -> w0 = w.   
+    forall (w r:Event),  (rf exec) w r -> (events exec) w /\ (events exec) r 
+                                          /\ is_w (event_label w) 
+                                          /\ is_r (event_label r)
+                                          /\ same_loc w r 
+                                          /\ same_val w r 
+                                          /\ forall (w0:Event), is_w (event_label w0) -> (rf exec) w0 r -> w0 = w.   
 
 (* Expresses that a read modify write relation can only exist between immediate reads and writes on the same location. *)
 Definition well_formed_rmw {Label: Type} {LabelProof: LabelClass Label} (exec:Execution): Prop := 
-    forall (r w:Event), (rmw exec) r w -> is_r (event_label r) /\ is_w (event_label w)
+    forall (r w:Event), (rmw exec) r w -> (events exec) r /\ (events exec) w
+                                          /\ is_r (event_label r) 
+                                          /\ is_w (event_label w)
                                           /\ (poimm exec) r w
                                           /\ same_loc r w. 
 
 (* Predicate to express well-formedness on an execution graph. *)
 Definition well_formed {Label: Type} {LabelProof: LabelClass Label} (exec:Execution): Prop := 
-    well_formed_mo exec /\ well_formed_rf exec /\ well_formed_rmw exec. 
+    uid_unique exec /\ well_formed_po exec /\ well_formed_mo exec /\ well_formed_rf exec /\ well_formed_rmw exec. 
 
 (* Define atomicity and coherence axioms because they are generic across the two itegrations *)
 Definition atomicity_axiom {Label: Type} {LabelProof : LabelClass Label} (e: Execution): Prop :=
