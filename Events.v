@@ -11,6 +11,8 @@ Class LabelClass (L : Type): Type := {
   lab_val : L -> Value; 
   is_r : L -> Prop;
   is_w : L -> Prop;
+  is_w_not_is_r : forall l, is_w l -> ~ is_r l;
+  is_r_not_is_w : forall l, is_r l -> ~ is_w l;
 }. 
 
 (* Events all have the same structure, we might however wish to instantiate 
@@ -52,3 +54,4 @@ Definition same_val (Label:Type) `{Label:LabelClass Label} (e1 e2:Event): Prop :
 
 Definition both_write {Label: Type} {LabelProof: LabelClass Label} (e1 e2:Event): Prop := 
   is_w (event_label e1) /\ is_w (event_label e2).
+

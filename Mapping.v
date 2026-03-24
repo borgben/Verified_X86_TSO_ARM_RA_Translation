@@ -23,8 +23,8 @@ Definition map_event_X86_Arm
     (e_arm   : @Event LabelArm LabelClassArm) : Prop :=
   match e_x86 with
   | EventInit uid lab =>
-         (~(dom_rel (rmw execX86) e_x86)  /\ e_arm = EventInit uid (map_label_x86_arm lab))
-      \/ ( (dom_rel (rmw execX86) e_x86)  /\ e_arm = EventInit uid (map_label_x86_arm_rmw lab))
+         (~(dom_rel (rmw execX86) e_x86) /\ e_arm = EventInit uid (map_label_x86_arm lab))
+      \/ ( (dom_rel (rmw execX86) e_x86) /\ e_arm = EventInit uid (map_label_x86_arm_rmw lab))
   | EventThread uid tid lab =>
         (~(dom_rel (rmw execX86) e_x86) /\ e_arm = EventThread uid tid (map_label_x86_arm lab))
       \/ ((dom_rel (rmw execX86) e_x86) /\ e_arm = EventThread uid tid (map_label_x86_arm_rmw lab))
@@ -58,8 +58,16 @@ Definition map_exec_Arm_X86 (execArm:@Execution LabelArm LabelClassArm):@Executi
     rf     := fun e1 e2 => exists x y, rf execArm x y /\ e1 = map_event_Arm_X86 x /\ e2 = map_event_Arm_X86 y;
     mo     := fun e1 e2 => exists x y, mo execArm x y /\ e1 = map_event_Arm_X86 x /\ e2 = map_event_Arm_X86 y; 
     rmw    := fun e1 e2 => exists x y, rmw execArm x y /\ e1 = map_event_Arm_X86 x /\ e2 = map_event_Arm_X86 y;  
-|}. 
+|}.
+
 (* *************************** Mapping Lemmas ****************************** *)
+
+Lemma map_label_x86_arm_inverse:
+    forall (lab : LabelX86),
+    map_label_Arm_X86 (map_label_x86_arm lab) = lab.
+Proof with eauto.
+    intros lab. destruct lab; simpl...
+Qed.
 
 Lemma map_event_Arm_X86_preserves_same_thread:
     forall (e1 e2 : @Event LabelArm LabelClassArm),
@@ -419,41 +427,66 @@ Lemma map_exec_Arm_X86_preserves_well_formed_po:
 Proof with eauto.
     intros execArm Hwf_po.
     unfold well_formed_po in *.
-    destruct Hwf_po as [Hpo_events Hpo_connected].
-    split.
-    - (* po relates only events in the execution *)
-      intros e1 e2 Hpo.
+    destruct Hwf_po as [Hpo_events [Hpo_connected Hpo_seq]].
+    split; [| split].
+    - intros e1 e2 Hpo.
       simpl in Hpo.
       destruct Hpo as [x [y [Hpo [Heqx Heqy]]]]; subst.
       destruct (Hpo_events x y Hpo) as [Hevx Hevy].
       split.
-      + simpl. exists x. split...
-      + simpl. exists y. split...
-    - (* every event is connected to at least one other via po *)
-      intros e.
+      -- simpl. exists x. split...
+      -- simpl. exists y. split...
+    - intros e.
       split.
-      + intros He.
+      -- intros He.
         simpl in He.
         destruct He as [x [Hevx Heqx]]; subst.
         apply Hpo_connected in Hevx.
         destruct Hevx as [e0 [Hev0 Hpo]].
         exists (map_event_Arm_X86 e0).
         split.
-        * simpl. exists e0. split...
-        * destruct Hpo as [Hpo | Hpo].
-          -- left.  simpl. exists x, e0. split...
-          -- right. simpl. exists e0, x. split...
-      + intros [e' [He' Hpo]].
+        --- simpl. exists e0. split...
+        --- destruct Hpo as [Hpo | Hpo].
+          ---- left.  simpl. exists x, e0. split...
+          ---- right. simpl. exists e0, x. split...
+      -- intros [e' [He' Hpo]].
         simpl in He', Hpo.
         destruct He' as [x [Hevx Heqx]]; subst.
         destruct Hpo as [Hpo | Hpo].
-        * destruct Hpo as [x1 [y1 [Hpo [Heq1 Heq2]]]]; subst.
-          destruct (Hpo_events x1 y1 Hpo) as [Hevx1 Hevy1].
-          simpl. exists x1. split...
-        * destruct Hpo as [x1 [y1 [Hpo [Heq1 Heq2]]]]; subst.
-          destruct (Hpo_events x1 y1 Hpo) as [Hevx1 Hevy1].
-          simpl. exists y1. split...
-Qed.
+        --- destruct Hpo as [x1 [y1 [Hpo [Heq1 Heq2]]]]; subst.
+            destruct (Hpo_events x1 y1 Hpo) as [Hevx1 Hevy1].
+            simpl. exists x1. split...
+        --- destruct Hpo as [x1 [y1 [Hpo [Heq1 Heq2]]]]; subst.
+            destruct (Hpo_events x1 y1 Hpo) as [Hevx1 Hevy1].
+            simpl. exists y1. split...
+    - intros e1 e2.
+      split.
+      -- intros Hpo.
+         simpl in Hpo.
+         destruct Hpo as [x [y [Hpo [Heqx Heqy]]]]; subst.
+         apply Hpo_seq in Hpo.
+         destruct x; destruct y; simpl in *...
+      -- intros Hseq.
+         destruct e1 as [uid1 lab1 | uid1 tid1 lab1];
+         destruct e2 as [uid2 lab2 | uid2 tid2 lab2];
+         simpl in Hseq; try contradiction. 
+         --- simpl.
+             exists (EventInit uid1 (map_label_x86_arm lab1)),
+                 (EventThread uid2 tid2 (map_label_x86_arm lab2)).
+             repeat split...
+             apply Hpo_seq. simpl... simpl... rewrite map_label_x86_arm_inverse...    
+             simpl... simpl... rewrite map_label_x86_arm_inverse... 
+        --- destruct Hseq as [Htid Hlt]; subst.
+            assert (Hpo : po execArm 
+              (EventThread uid1 tid2 (map_label_x86_arm lab1))
+              (EventThread uid2 tid2 (map_label_x86_arm lab2))).
+            { apply Hpo_seq. simpl... }
+            simpl.
+            exists (EventThread uid1 tid2 (map_label_x86_arm lab1)),
+                 (EventThread uid2 tid2 (map_label_x86_arm lab2)).
+            split... simpl... simpl... rewrite map_label_x86_arm_inverse...
+            split... simpl... simpl... rewrite map_label_x86_arm_inverse... 
+Qed. 
 
 Lemma map_exec_Arm_X86_preserves_well_formed_mo:
     forall (execArm : @Execution LabelArm LabelClassArm),
@@ -511,17 +544,7 @@ Proof with eauto.
       subst...
 Qed.
 
-Lemma po_in_events_l : forall (execArm : @Execution LabelArm LabelClassArm) x y,
-    well_formed_po execArm -> po execArm x y ->  events execArm x.
-Proof with eauto.
-    intros. unfold well_formed_po in *. destruct H as [H1 H2]. apply H1 in H0. destruct H0 as [H0 _]...
-Qed.
 
-Lemma po_in_events_r : forall (execArm : @Execution LabelArm LabelClassArm) x y,
-    well_formed_po execArm -> po execArm x y -> events execArm y.
-Proof with eauto.
-    intros. unfold well_formed_po in *. destruct H as [H1 H2]. apply H1 in H0. destruct H0 as [_ H0]...
-Qed.  
 
 Lemma mapping_preserves_poimm: 
     forall (execArm : @Execution LabelArm LabelClassArm) 
@@ -541,7 +564,7 @@ Proof with eauto.
       destruct Hpo2 as [x' [y' [Hpo2 [Heqx' Heqy']]]]. 
       subst. 
       assert (Heq : map_event_Arm_X86 y = map_event_Arm_X86 x') by congruence. 
-      assert (Hevx  : events execArm x)  by (eapply po_in_events_l;  eauto). 
+      assert (Hevx  : events execArm x)  by (eapply po_in_events_l; eauto). 
       assert (Hevy  : events execArm y)  by (eapply po_in_events_r; eauto).
       assert (Hevx' : events execArm x') by (eapply po_in_events_l; eauto).
       assert (Hevy' : events execArm y') by (eapply po_in_events_r; eauto). 
@@ -652,107 +675,7 @@ Proof with eauto.
       subst... 
 Qed.
 
-Lemma fr_in_events: 
-    forall (exec : @Execution LabelX86 LabelClassX86) e1 e2,
-    well_formed exec ->
-    (fr exec) e1 e2 -> events exec e1 /\ events exec e2.
-Proof with eauto. 
-    intros exec e1 e2 Hwf Hfr. unfold fr in *. 
-    unfold seq in *. unfold transp in *. 
-    destruct Hfr as [z [Hrf Hmo]]. 
-    destruct Hwf as  [Huid [Hpowf [Hmowf [Hrfwf Hrmwwf]]]].
-    unfold well_formed_mo in *. unfold well_formed_rf in *. 
-    apply Hmowf in Hmo. apply Hrfwf in Hrf. destruct Hrf as [_ [Heve1 _]]. 
-    destruct Hmo as [_ [Heve2 _]]. split... 
-Qed.
 
-Lemma ppo_x86_in_events :
-    forall (exec : @Execution LabelX86 LabelClassX86) e1 e2,
-    well_formed exec ->
-    ppo_x86 exec e1 e2 -> events exec e1 /\ events exec e2.
-Proof with eauto.
-    intros exec e1 e2 Hwf Hppo.
-    unfold ppo_x86 in Hppo.
-    destruct Hppo as [Hpo _].
-    unfold well_formed in *. 
-    destruct Hwf as [_ [HpoWf _]].
-    unfold well_formed_po in *. 
-    destruct HpoWf as [HpoEv _].
-    apply HpoEv in Hpo...  
-Qed.
-
-Lemma implid_x86_in_events :
-    forall (exec : @Execution LabelX86 LabelClassX86) e1 e2,
-    well_formed exec ->
-    implid_x86 exec e1 e2 -> events exec e1 /\ events exec e2.
-Proof with eauto.
-    intros exec e1 e2 Hwf Himp.
-    unfold implid_x86 in Himp.
-    unfold well_formed in Hwf. 
-    destruct Hwf as [Huid [Hpowf [Hmowf [Hrfwf Hrmwwf]]]].  
-    destruct Himp as [Himp | Himp].
-    - destruct Himp as [z [Hpo Hatom]].
-      unfold dom_rel, codom_rel in Hatom.
-      unfold well_formed_po in *. 
-      destruct Hpowf as [Hpowf _]. apply Hpowf in Hpo.   
-      destruct Hatom as [[w [y Hrmw]] | [w [y Hrmw]]];  
-      subst...  
-    - destruct Himp as [z [Hatom Hpo]].
-      unfold dom_rel, codom_rel in Hatom.
-      unfold well_formed_po in *. 
-      destruct Hpowf as [Hpowf _]. apply Hpowf in Hpo.      
-      destruct Hatom as [[w Hrmw] | [w Hrmw]]; 
-      subst...  
-Qed.
-
-Lemma hb_x86_in_events :
-    forall (exec : @Execution LabelX86 LabelClassX86) e1 e2,
-    well_formed exec ->
-    hb_x86 exec e1 e2 -> events exec e1 /\ events exec e2.
-Proof with eauto.
-    intros exec e1 e2 Hwf Hhb.
-    unfold hb_x86 in Hhb.
-    assert (Hwfcopy: well_formed exec)...  
-    unfold well_formed in Hwfcopy. 
-    destruct Hwfcopy as [Huid [Hpowf [Hmowf [Hrfwf Hrmwwf]]]].  
-    induction Hhb as [e1 e2 Hbase | e1 e3 e2 _ IH1 _ IH2]. 
-    - destruct Hbase as [[[[Hppo | Himp]| Hrf ]| Hfr ]| Hmo].     
-      -- eapply ppo_x86_in_events... 
-      -- eapply implid_x86_in_events... 
-      -- unfold external in *. destruct Hrf as [Hrf _]. 
-         unfold well_formed_rf in *. apply Hrfwf in Hrf.
-         destruct Hrf as [Hev1 [Hev2 _]]. split...          
-      -- apply fr_in_events...    
-      -- unfold well_formed_mo in *. apply Hmowf in Hmo. 
-         destruct Hmo as [Hev1 [Hev2 _]]. split... 
-    - destruct IH1 as [He1 _].
-      destruct IH2 as [_ He2].
-      split...
-Qed.
-
-Lemma not_w_r_implies_other_cases :
-    forall (x y : @Event LabelX86 LabelClassX86),
-    ~ (is_w (event_label x) /\ is_r (event_label y)) ->
-        (is_w (event_label x) /\ is_w (event_label y)) 
-        \/ (is_r (event_label x) /\ is_r (event_label y)) 
-        \/ (is_r (event_label x) /\ is_w (event_label y)).
-Proof with eauto.
-    intros x y Hnot.
-    destruct x as [uid1 lab1 | uid1 tid1 lab1] eqn:X;   
-    destruct lab1 as [loc1 val1 | loc1 val1] eqn:L1; 
-    destruct y as [uid2 lab2 | uid2 tid2 lab2] eqn:Y; 
-    destruct lab2 as [loc2 val2 | loc2 val2] eqn:L2;
-    simpl in *; eauto.     
-Qed.
-
-Lemma arm_consistent_amo_is_rmw: 
-    forall (execArm: @Execution LabelArm LabelClassArm) (e0 e1: @Event LabelArm LabelClassArm),
-        (amo execArm) ≡ (rmw execArm) -> (rmw execArm) e0 e1 -> (amo execArm) e0 e1.
-Proof with eauto. 
-    intros.
-    unfold same_relation in *. destruct H as [Hamo Hrmw]. 
-    unfold inclusion in *...      
-Qed.
 
 Lemma hb_x86_mapped_implies_ob_arm :
     forall (execArm : @Execution LabelArm LabelClassArm)
@@ -783,7 +706,7 @@ Proof with eauto.
       destruct Hppo as [Hpo Hnot]. simpl in Hpo. 
       destruct Hpo as [x0 [y0 [Hpo [Hxmap Hymap]]]].
       left. left. left. left. right. unfold bob_arm.
-      left. apply not_w_r_implies_other_cases in Hnot.
+      left. apply not_w_r_implies_other_cases_x86 in Hnot.
       destruct Hnot as [ [Hwx Hwy] |[ [Hrx Hry] | [Hrx Hwy]]].
       --- left. right. unfold seq. subst. exists y0. unfold W.
           unfold eqv_rel. unfold well_formed_po in Hpowf.
@@ -885,7 +808,9 @@ Proof with eauto.
       apply (map_event_Arm_X86_injective execArm e1_0 y0 Huid) in Hmapy... 
       subst. split... unfold not in *.  intros. apply HsamethreadX86. 
       apply map_event_Arm_X86_preserves_same_thread... 
-   --          
+   -- destruct (same_thread_dec_x86 x y). 
+      --- left. left. left. left. right. unfold bob_arm. left. left. left. unfold seq. 
+unfold seq in *. unfold transp in *.    Admitted.                    
 
 Lemma mapping_preserves_ordered_before: forall (execArm:@Execution LabelArm LabelClassArm), 
     well_formed execArm -> ordered_before_axiom_arm execArm -> ordered_before_axiom_x86 (map_exec_Arm_X86 execArm). 
