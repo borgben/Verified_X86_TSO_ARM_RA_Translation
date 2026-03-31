@@ -115,6 +115,17 @@ Proof with eauto.
     destruct Hwf as [Huid [[HpoWf _] _]]. eauto.
 Qed.   
 
+Lemma well_formed_rf_events: 
+    forall {Label: Type} {LabelProof : LabelClass Label} (exec: @Execution Label LabelProof)
+           (x y : @Event Label LabelProof),
+    well_formed exec ->
+        rf exec x y ->
+            events exec x /\ events exec y.
+Proof with eauto. 
+    intros Label LabelProof exec x y Hwf Hrf. 
+    destruct Hwf as [_ [_ [_ [HrfWf  _]]] _]. 
+    apply HrfWf in Hrf. destruct Hrf as [Hevx [Hevy _]]...  
+Qed.  
 
 Lemma fr_same_thread_implies_po:
     forall {Label: Type} {LabelProof : LabelClass Label} (exec: @Execution Label LabelProof)

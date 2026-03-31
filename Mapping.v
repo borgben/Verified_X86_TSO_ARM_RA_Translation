@@ -935,9 +935,9 @@ Proof with eauto.
     unfold irreflexive in *. intros x HhbX86. 
     assert (HwfX86: well_formed (map_exec_Arm_X86 execArm)).  
     { apply (mapping_preserves_well_formedness execArm HwfArm). }    
-    assert (Hevents: (events (map_exec_Arm_X86 execArm) x /\ events (map_exec_Arm_X86 execArm) x)).
+    assert (Hevents: (events (map_exec_Arm_X86 execArm) x /\ events (map_exec_Arm_X86 execArm) x)). 
     { apply (hb_x86_in_events (map_exec_Arm_X86 execArm) x x HwfX86 HhbX86). } 
-    destruct Hevents as [Hevx _]. simpl in Hevx. destruct Hevx as [e [Heve Hmapx]].
+    destruct Hevents as [Hevx _]. simpl in Hevx. destruct Hevx as [e [Heve Hmapx]]. 
     specialize (HobAxArm e). apply HobAxArm. 
     subst. apply hb_x86_mapped_implies_ob_arm...    
 Qed. 
