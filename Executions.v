@@ -123,7 +123,7 @@ Lemma well_formed_rf_events:
             events exec x /\ events exec y.
 Proof with eauto. 
     intros Label LabelProof exec x y Hwf Hrf. 
-    destruct Hwf as [_ [_ [_ [HrfWf  _]]] _]. 
+    destruct Hwf as [_ [_ [_ [HrfWf  _]]]]. 
     apply HrfWf in Hrf. destruct Hrf as [Hevx [Hevy _]]...  
 Qed.
 
@@ -135,7 +135,7 @@ Lemma well_formed_mo_write_r:
             is_w (event_label y). 
 Proof with eauto. 
     intros Label LabelProof exec x y Hwf Hmo.  
-    destruct Hwf as [_ [_ [HmoWf _]] _]. 
+    destruct Hwf as [_ [_ [HmoWf _]]]. 
     apply HmoWf in Hmo. destruct Hmo as [_ [_ [[_ Hwy] _]]]...  
 Qed.
 
@@ -147,7 +147,7 @@ Lemma well_formed_mo_events:
             events exec x /\ events exec y.
 Proof with eauto. 
     intros Label LabelProof exec x y Hwf Hmo.  
-    destruct Hwf as [_ [_ [HmoWf _]] _]. 
+    destruct Hwf as [_ [_ [HmoWf _]]]. 
     apply HmoWf in Hmo. destruct Hmo as [Hevx [Hevy _]]...  
 Qed. 
 
