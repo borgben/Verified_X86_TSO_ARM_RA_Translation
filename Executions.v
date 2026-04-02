@@ -127,6 +127,18 @@ Proof with eauto.
     apply HrfWf in Hrf. destruct Hrf as [Hevx [Hevy _]]...  
 Qed.
 
+Lemma well_formed_rf_same_loc: 
+    forall {Label: Type} {LabelProof : LabelClass Label} (exec: @Execution Label LabelProof)
+           (x y : @Event Label LabelProof),
+    well_formed exec ->
+        rf exec x y ->
+            same_loc x y. 
+Proof with eauto. 
+    intros Label LabelProof exec x y Hwf Hrf. 
+    destruct Hwf as [_ [_ [ _ [HrfWf _]]]].  
+    apply HrfWf in Hrf. destruct Hrf as [_ [_ [_ [_ [Hsmeloc _]]]]]...
+Qed. 
+
 Lemma well_formed_mo_write_r: 
     forall {Label: Type} {LabelProof : LabelClass Label} (exec: @Execution Label LabelProof)
            (x y : @Event Label LabelProof),
@@ -149,6 +161,18 @@ Proof with eauto.
     intros Label LabelProof exec x y Hwf Hmo.  
     destruct Hwf as [_ [_ [HmoWf _]]]. 
     apply HmoWf in Hmo. destruct Hmo as [Hevx [Hevy _]]...  
+Qed.
+
+Lemma well_formed_mo_same_loc: 
+    forall {Label: Type} {LabelProof : LabelClass Label} (exec: @Execution Label LabelProof)
+           (x y : @Event Label LabelProof),
+    well_formed exec ->
+        mo exec x y ->
+            same_loc x y. 
+Proof with eauto. 
+    intros Label LabelProof exec x y Hwf Hmo. 
+    destruct Hwf as [_ [_ [HmoWf _]]]. 
+    apply HmoWf in Hmo. destruct Hmo as [_ [_ [_ [Hsmeloc _]]]]...
 Qed. 
 
 Lemma well_formed_rmw_events: 
