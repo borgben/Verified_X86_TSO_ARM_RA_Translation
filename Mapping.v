@@ -587,31 +587,6 @@ Proof with eauto.
     apply map_exec_Arm_X86_preserves_well_formed_rmw... 
 Qed.
 
-(* Lemma map_event_Arm_X86_injective:
-    forall (execArm : @Execution LabelArm LabelClassArm)
-           (e1 e2 : @Event LabelArm LabelClassArm),
-    uid_unique execArm ->
-    events execArm e1 ->
-    events execArm e2 ->
-    map_event_Arm_X86 e1 = map_event_Arm_X86 e2 -> e1 = e2.
-Proof with eauto.
-    intros execArm e1 e2 Huniq He1 He2 Heq. 
-    apply Huniq...
-    rewrite <- map_event_Arm_X86_preserves_uid. 
-    rewrite <- map_event_Arm_X86_preserves_uid. 
-    rewrite Heq...
-Qed. *)
-
-Lemma inv_mapping_preserves_events: forall execArm e, 
-    well_formed execArm ->
-        events (map_exec_Arm_X86 execArm) (map_event_Arm_X86 e) -> events execArm e. 
-Proof with eauto.
-    intros execArm e Hwf H. 
-    destruct H as [x [Hxev Heq]].
-    destruct Hwf as [Huniq _].
-    
-Qed.
-
 Lemma inv_mapping_preserves_rf: forall(execArm:@Execution LabelArm LabelClassArm) (e1 e2:Event), 
     well_formed execArm -> events execArm e1 -> events execArm e2 ->
     (rf (map_exec_Arm_X86 execArm)) (map_event_Arm_X86 e1) (map_event_Arm_X86 e2) -> (rf execArm) e1 e2.
@@ -630,12 +605,44 @@ Proof with eauto.
     subst...
 Qed. 
 
+Lemma inv_mapping_preserves_po: forall(execArm:@Execution LabelArm LabelClassArm) (e1 e2:Event), 
+    well_formed execArm -> events execArm e1 -> events execArm e2 ->
+    (po (map_exec_Arm_X86 execArm)) (map_event_Arm_X86 e1) (map_event_Arm_X86 e2) -> (po execArm) e1 e2.
+Proof with eauto. 
+    intros execArm e1 e2 Hwf Hev1 Hev2 H. 
+    destruct Hwf as [Huniq [Hwfpo _]].
+    simpl in H.
+    destruct H. destruct H as [y].
+    destruct H as [Hpo [Heq1 Heq2]].
+    destruct Hwfpo as [Hwfpo _].
+    specialize (Hwfpo x y).
+    pose proof Hpo as Hevs.
+    apply Hwfpo in Hevs.
+    destruct Hevs as [Hevx Hevy].
+    apply (map_event_Arm_X86_injective execArm) in Heq1...
+    apply (map_event_Arm_X86_injective execArm) in Heq2...
+    subst...
+Qed. 
+
+Lemma inv_mapping_preserves_loc: forall(execArm:@Execution LabelArm LabelClassArm) (e1 e2:Event), 
+    well_formed execArm -> events execArm e1 -> events execArm e2 ->
+        same_loc (map_event_Arm_X86 e1) (map_event_Arm_X86 e2) -> same_loc e1 e2.
+Proof with eauto. 
+    intros.
+    unfold same_loc in *.
+    repeat rewrite mapping_preserves_location_arm...
+Qed.
+
 Lemma inv_mapping_preserves_poloc: forall(execArm:@Execution LabelArm LabelClassArm) (e1 e2:Event), 
     well_formed execArm -> events execArm e1 -> events execArm e2 ->
     (poloc (map_exec_Arm_X86 execArm)) (map_event_Arm_X86 e1) (map_event_Arm_X86 e2) -> (poloc execArm) e1 e2.
 Proof with eauto. 
-
-Admitted. 
+    intros execArm e1 e2 Hwf Hev1 Hev2 H.
+    unfold poloc in *. 
+    destruct H as [Hloc Hpo].
+    apply inv_mapping_preserves_po in Hpo...
+    apply (inv_mapping_preserves_loc execArm) in Hloc...
+Qed. 
 
 Lemma inv_mapping_preserves_mo: forall(execArm:@Execution LabelArm LabelClassArm) (e1 e2:Event), 
     well_formed execArm -> events execArm e1 -> events execArm e2 ->
@@ -667,21 +674,20 @@ Proof with eauto.
     unfold seq in *.
     unfold transp in *.
     destruct H as [x [Hrf Hmo]].
-    destruct Hwfx86 as [Huniqx86 [_ [Hwfmox86 [Hwfrfx86 _]]]].
+    destruct Hwfx86 as [_ [_ [_ [Hwfrfx86 _]]]].
     pose proof Hwf as Hwf'.
     destruct Hwf' as [Huniq [_ [Hwfmo [Hwfrf _]]]].
-    
-    (* obtain the x out of Hrf using its well formedness *)
     specialize (Hwfrfx86 x (map_event_Arm_X86 e1)).
-    apply Hwfrfx86 in Hrf.
-    destruct Hrf as [Hxev _].
-    apply (inv_mapping_preserves_events execArm) in Hxev.
-
-    (* assert (exists xArm, x = map_event_Arm_X86 xArm).
-    -  *)
-      
-
-Admitted. 
+    pose proof Hrf as Hrf'.
+    apply Hwfrfx86 in Hrf'.
+    destruct Hrf' as [Hxev _].
+    destruct Hxev as [x_arm [Hevxarm Heqx]].
+    exists x_arm.
+    subst.
+    split.
+    - apply inv_mapping_preserves_rf...
+    - apply inv_mapping_preserves_mo...
+Qed. 
 
 Lemma mapping_preserves_behaviour: forall (execArm:@Execution LabelArm LabelClassArm) (l:Location) (v:Value), 
     well_formed execArm -> (behaviour (execArm) (l, v) <-> behaviour (map_exec_Arm_X86 execArm) (l, v)).  
