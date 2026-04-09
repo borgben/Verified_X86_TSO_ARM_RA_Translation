@@ -282,11 +282,11 @@ Proof with eauto.
               (EventThread uid1 tid2 (map_label_x86_arm lab1))
               (EventThread uid2 tid2 (map_label_x86_arm lab2))).
             { apply Hpo_seq. simpl... }
-            simpl.
+            simpl. 
             exists (EventThread uid1 tid2 (map_label_x86_arm lab1)),
-                 (EventThread uid2 tid2 (map_label_x86_arm lab2)).
-            split... simpl... simpl... rewrite map_label_x86_arm_inverse...
-            split... simpl... simpl... rewrite map_label_x86_arm_inverse... 
+                 (EventThread uid2 tid2 (map_label_x86_arm lab2)). 
+            split... simpl...  rewrite map_label_x86_arm_inverse... 
+            split... rewrite map_label_x86_arm_inverse... 
 Qed. 
 
 Lemma map_exec_Arm_X86_preserves_well_formed_mo:
@@ -974,6 +974,7 @@ Proof with eauto.
 Qed. 
 
 (*************************************************************************************** Semantic Preservation *****************************************************************************)
+
 Theorem semantic_preservation_x86_arm_release_acquire: 
     forall (execArm: @Execution LabelArm LabelClassArm), 
         arm_consistent execArm -> 
@@ -990,4 +991,5 @@ Proof with eauto.
       apply mapping_preserves_coherence...  
       apply mapping_preserves_ordered_before... 
     - intros. apply mapping_preserves_behaviour...  
-Qed. 
+Qed.
+Print Assumptions semantic_preservation_x86_arm_release_acquire. 

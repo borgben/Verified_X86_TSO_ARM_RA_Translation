@@ -4,7 +4,8 @@ In order to compile the project we require an active opam switch with Rocq Versi
 #### Install Hahn Dependency 
 ```bash 
 opam repo add coq-weakmemory-local git+https://github.com/weakmemory/local-coq-opam-archive 
-opam repo add coq-promising-local git+https://github.com/weakmemory/local-coq-opam-archive 
+opam repo add coq-promising-local git+https://github.com/weakmemory/local-coq-opam-archive
+opam install coq-hahn
 ```
 #### Create MakeFile 
 ```bash
